@@ -1,7 +1,7 @@
 {
   "name": "com.awavr.presetcreator",
   "displayName": "AwA - Preset Creator",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Quickly create and edit presets.",
   "gitDependencies": {},
   "vpmDependencies": {
@@ -14,5 +14,6 @@
     "url": "github.com/awa-vr/vrc-tools-vpm"
   },
   "legacyFolders": {},
-  "legacyFiles": {}
+  "legacyFiles": {},
+  "unity": "2022.3"
 }
