@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Algolia.Search.Models.Rules;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -44,6 +45,10 @@ namespace AwAVR.PresetCreator
         private int _selectedPresetIndex = 0;
         private int _lastSelectedPresetIndex = 0;
 
+        // Settings
+        private static bool _hasReadMenuWarning = false;
+        private const string HasReadMenuWarningKey = "HasReadMenuWarning";
+
         #endregion
 
         #region Window
@@ -58,6 +63,8 @@ namespace AwAVR.PresetCreator
                 tooltip: "Create preset for a VRChat avatar"
             );
             window.minSize = new Vector2(450f, window.minSize.y);
+
+            LoadSettings();
         }
 
         public void OnEnable()
@@ -77,6 +84,14 @@ namespace AwAVR.PresetCreator
                 _avatars.Clear();
                 return;
             }
+
+            LoadSettings();
+        }
+
+        private static void LoadSettings()
+        {
+            if (EditorPrefs.HasKey(HasReadMenuWarningKey))
+                _hasReadMenuWarning = EditorPrefs.GetBool(HasReadMenuWarningKey);
         }
 
         public void OnGUI()
@@ -84,18 +99,28 @@ namespace AwAVR.PresetCreator
             Core.Title(_windowTitle);
 
             // Info box
-            EditorGUILayout.HelpBox(
-                "This tool won't automatically add the preset to a menu, you will have to do this manually." +
-                "\n\n" +
-                "More info can be found here: https://awa-vr.github.io/vrc-docs/docs/unity/presets/#menu\n" +
-                "(Click the button below to open)",
-                MessageType.Info);
-            if (GUILayout.Button("Adding to a menu"))
+            if (!_hasReadMenuWarning)
             {
-                Application.OpenURL("https://awa-vr.github.io/vrc-docs/docs/unity/presets/#menu");
-            }
+                EditorGUILayout.HelpBox(
+                    "This tool won't automatically add the preset to a menu, you will have to do this manually." +
+                    "\n\n" +
+                    "More info can be found here: https://awa-vr.github.io/vrc-docs/docs/unity/presets/#menu\n" +
+                    "(Click the button below to open)",
+                    MessageType.Warning);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Open Link"))
+                        Application.OpenURL("https://awa-vr.github.io/vrc-docs/docs/unity/presets/#menu");
 
-            GUILayout.Space(10);
+                    if (GUILayout.Button("Close Warning"))
+                    {
+                        EditorPrefs.SetBool(HasReadMenuWarningKey, true);
+                        _hasReadMenuWarning = true;
+                    }
+                }
+
+                GUILayout.Space(10);
+            }
 
             // Avatar
             Core.GetAvatar(ref _avatar, ref _avatars);

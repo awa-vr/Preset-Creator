@@ -1,7 +1,7 @@
 {
   "name": "com.awavr.presetcreator",
   "displayName": "AwA - Preset Creator",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Quickly create and edit presets.",
   "gitDependencies": {},
   "vpmDependencies": {
