@@ -137,7 +137,7 @@ namespace AwAVR.PresetCreator
                 return;
 
             // Get FX Animator
-            _fx = Core.GetFXController(_avatar);
+            _fx = Core.GetAnimatorController(_avatar);
 
             if (_fx == null)
             {
