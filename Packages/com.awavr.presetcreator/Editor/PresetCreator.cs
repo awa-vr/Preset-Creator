@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Algolia.Search.Models.Rules;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -41,9 +40,11 @@ namespace AwAVR.PresetCreator
         private List<Preset> _presetsParameters = new List<Preset>();
         private string _newPresetName = "";
         private bool _addNewPreset = false;
+        private bool _renamePreset = false;
+        private bool _writeDefaults = false;
         private Vector2 _scrollPos = Vector2.zero;
         private int _selectedPresetIndex = 0;
-        private int _lastSelectedPresetIndex = 0;
+        private int _lastSelectedPresetIndex = -1;
 
         // Settings
         private static bool _hasReadMenuWarning = false;
@@ -149,6 +150,7 @@ namespace AwAVR.PresetCreator
             _presetsLayer = Core.GetLayerByName(_fx, "Presets");
             if (_presetsLayer == null)
             {
+                ShowWriteDefaultsToggle();
                 AskAddPresetsLayer();
                 return;
             }
@@ -179,12 +181,14 @@ namespace AwAVR.PresetCreator
             }
 
             // New/Update preset buttons
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("New Preset"))
-                NewPreset();
-            if (GUILayout.Button("Update Preset"))
-                UpdatePreset();
-            GUILayout.EndHorizontal();
+            ShowEditButtons();
+
+            // Rename Preset Shiz
+            if (_renamePreset)
+            {
+                ShowRenameGUI();
+                return;
+            }
 
             // List params
             if (_currentPreset)
@@ -208,31 +212,127 @@ namespace AwAVR.PresetCreator
 
         #region GUIHelpers
 
+        private void ShowWriteDefaultsToggle()
+        {
+            var content = new GUIContent("Write Defaults",
+                tooltip: "This just exists to shut up the VRChat SDK and VRCFury.");
+            _writeDefaults = GUILayout.Toggle(_writeDefaults, content, GUILayout.Width(100));
+        }
+
         private void PresetSelection()
         {
-            GUILayout.BeginHorizontal();
-
-            var presetNames = _presets.Select(p => p.state.name).Where(name => name != "Idle").ToArray();
-            _selectedPresetIndex = EditorGUILayout.Popup("Preset", _selectedPresetIndex, presetNames);
-
-            if (_selectedPresetIndex != _lastSelectedPresetIndex)
+            using (new GUILayout.HorizontalScope())
             {
-                // Check if there are unsaved changes
-                if (_presetsParameters.Any(p => p.Modified))
+                var presetNames = _presets.Select(p => p.state.name).Where(name => name != "Idle").ToArray();
+                _selectedPresetIndex = EditorGUILayout.Popup("Preset", _selectedPresetIndex, presetNames);
+
+                if (_selectedPresetIndex != _lastSelectedPresetIndex)
                 {
-                    if (!EditorUtility.DisplayDialog("Unsaved Changes",
-                            "You have unsaved changes in the current preset. Do you want to continue without saving?",
-                            "Discard Changes", "Cancel"))
+                    // Check if there are unsaved changes
+                    if (_presetsParameters.Any(p => p.Modified))
                     {
-                        _selectedPresetIndex = _lastSelectedPresetIndex;
-                        return;
+                        if (!EditorUtility.DisplayDialog("Unsaved Changes",
+                                "You have unsaved changes in the current preset. Do you want to continue without saving?",
+                                "Discard Changes", "Cancel"))
+                        {
+                            _selectedPresetIndex = _lastSelectedPresetIndex;
+                            return;
+                        }
                     }
+
+                    UpdatePresetsList();
                 }
 
-                UpdatePresetsList();
+                ShowWriteDefaultsToggle();
             }
+        }
 
-            GUILayout.EndHorizontal();
+        private void ShowEditButtons()
+        {
+            using (new GUILayout.HorizontalScope())
+            {
+                var style = new GUIStyle(GUI.skin.button);
+                // style.imagePosition = ImagePosition.ImageOnly;
+
+                if (GUILayout.Button(new GUIContent("New", EditorGUIUtility.IconContent("d_Toolbar Plus").image),
+                        style))
+                    NewPreset();
+
+                if (GUILayout.Button(new GUIContent("Delete", EditorGUIUtility.IconContent("d_Toolbar Minus").image),
+                        style))
+                    DeletePreset();
+
+                if (GUILayout.Button(new GUIContent("Rename", EditorGUIUtility.IconContent("d_editicon.sml").image),
+                        style))
+                    RenamePreset();
+
+                if (GUILayout.Button(new GUIContent("Update", EditorGUIUtility.IconContent("Refresh").image), style))
+                    UpdatePreset();
+            }
+        }
+
+        private void ShowRenameGUI()
+        {
+#if PARAMETER_RENAMER_V1_1_0
+            using (new GUILayout.VerticalScope())
+            {
+                var presetName = GetPresetName();
+                using (new EditorGUI.DisabledGroupScope(true))
+                {
+                    EditorGUILayout.TextField("Old Name", presetName);
+                }
+
+                _newPresetName = EditorGUILayout.TextField("New Name", _newPresetName);
+
+                if (GUILayout.Button("Rename"))
+                {
+                    if (EditorUtility.DisplayDialog("Confirm",
+                            $"Are you sure you want to rename preset \"{presetName}\" to \"{_newPresetName}\"", "Yes",
+                            "No")) ;
+                    {
+                        var parameterName = $"Presets/{_newPresetName}";
+
+                        // Check if preset exists
+                        bool paramExists = false;
+                        foreach (var vrcParam in _vrcParams.parameters)
+                        {
+                            if (vrcParam.name == parameterName)
+                            {
+                                paramExists = true;
+                                break;
+                            }
+                        }
+
+                        foreach (var fxParam in _fx.parameters)
+                        {
+                            if (fxParam.name == parameterName)
+                            {
+                                paramExists = true;
+                                break;
+                            }
+                        }
+
+                        // Renaming SHiz
+                        if (paramExists)
+                        {
+                            EditorUtility.DisplayDialog("Name already used", "New preset name is already used.", "OK");
+                        }
+                        else
+                        {
+                            Undo.RecordObject(_fx, "Rename Preset");
+                            _presetsLayer.stateMachine.states[_selectedPresetIndex + 1].state.name = _newPresetName;
+                            Core.Cleany(_fx);
+
+                            ParameterRenamer.Show($"Presets/{presetName}", _avatar, $"Presets/{_newPresetName}", true);
+                        }
+
+                        _renamePreset = false;
+                    }
+                }
+            }
+#else
+            EditorGUILayout.HelpBox("Parameter Renamer not installed.", MessageType.Error);
+#endif
         }
 
         #endregion
@@ -242,6 +342,7 @@ namespace AwAVR.PresetCreator
         private void UpdatePresetsList()
         {
             _currentPreset = _presets[_selectedPresetIndex + 1].state;
+            _writeDefaults = _currentPreset.writeDefaultValues;
             var parameterDriver = _currentPreset.behaviours.OfType<VRCAvatarParameterDriver>().First();
 
             _presetsParameters.Clear();
@@ -333,6 +434,7 @@ namespace AwAVR.PresetCreator
                 // add animation state
                 var newPreset = _presetsLayer.stateMachine.AddState(_newPresetName);
                 newPreset.motion = emptyClip;
+                newPreset.writeDefaultValues = _writeDefaults;
                 newPreset.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
 
                 // add parameters to vrc params
@@ -570,6 +672,58 @@ namespace AwAVR.PresetCreator
 
             Core.Cleany(parameterDriver);
             UpdatePresetsList();
+        }
+
+        private void RenamePreset()
+        {
+#if PARAMETER_RENAMER_V1_1_0
+            _renamePreset = true;
+#else
+            EditorUtility.DisplayDialog("Install Parameter Renamer",
+                "To rename a preset you need to install Parameter Renamer v1.1.0 or later from VCC.",
+                "OK");
+#endif
+        }
+
+        private void DeletePreset()
+        {
+            var presetName = GetPresetName();
+            if (EditorUtility.DisplayDialog("Confirm",
+                    $"Are you sure you want to delete preset \"{presetName}\"?\nThis will not remove it from any menus you made have had the preset added to.",
+                    "Yes",
+                    "No"))
+            {
+                var objects = new UnityEngine.Object[] { _fx, _vrcParams };
+                Undo.RecordObjects(objects, $"Delete Preset: {presetName}");
+
+                var parameterName = $"Presets/{presetName}";
+
+                // Remove state from Presets Layer
+                var presetState = _presetsLayer.stateMachine.states
+                    .FirstOrDefault(state => state.state.name == parameterName).state;
+                _presetsLayer.stateMachine.RemoveState(presetState);
+
+                // Remove from fx parameters
+                var parameterIndex = _fx.parameters.ToList().FindIndex(p => p.name == parameterName);
+                _fx.RemoveParameter(parameterIndex);
+
+                // Remove from VRC parameters
+                var newParamsList = new List<VRCExpressionParameters.Parameter>();
+                foreach (var param in _vrcParams.parameters)
+                {
+                    if (param.name != parameterName)
+                        newParamsList.Add(param);
+                }
+
+                _vrcParams.parameters = newParamsList.ToArray();
+
+                Core.CleanObjects(objects);
+            }
+        }
+
+        private string GetPresetName()
+        {
+            return _presets[_selectedPresetIndex + 1].state.name;
         }
 
         #endregion

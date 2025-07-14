@@ -1,12 +1,12 @@
 {
   "name": "com.awavr.presetcreator",
   "displayName": "AwA - Preset Creator",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Quickly create and edit presets.",
   "gitDependencies": {},
   "vpmDependencies": {
     "com.vrchat.avatars": "^3.0.0",
-    "com.awavr.core": "^1.2.0"
+    "com.awavr.core": "^1.3.0"
   },
   "author": {
     "name": "AwA",

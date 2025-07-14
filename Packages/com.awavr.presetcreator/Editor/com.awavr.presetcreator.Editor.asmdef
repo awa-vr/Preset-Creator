@@ -6,7 +6,8 @@
         "VRC.SDK3A.Editor",
         "VRC.SDKBase",
         "VRC.SDKBase.Editor",
-        "com.awavr.core.Editor"
+        "com.awavr.core.Editor",
+        "com.awavr.parameterrenamer.Editor"
     ],
     "includePlatforms": [
         "Editor"
@@ -17,6 +18,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.awavr.parameterrenamer",
+            "expression": "1.1.0",
+            "define": "PARAMETER_RENAMER_V1_1_0"
+        }
+    ],
     "noEngineReferences": false
 }
