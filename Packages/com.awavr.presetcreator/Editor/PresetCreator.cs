@@ -9,20 +9,24 @@ using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDKBase;
 
-namespace AwAVR.PresetCreator {
-    class Preset {
+namespace AwAVR.PresetCreator
+{
+    class Preset
+    {
         public VRC_AvatarParameterDriver.Parameter Parameter { get; set; }
         public bool Change { get; set; } // If the parameter should change in the preset
         public bool Modified { get; set; } // If the parameter has changed options that are not yet applied
 
-        public Preset(VRC_AvatarParameterDriver.Parameter parameter, bool change) {
+        public Preset(VRC_AvatarParameterDriver.Parameter parameter, bool change)
+        {
             Parameter = parameter;
             Change = change;
             Modified = false;
         }
     }
 
-    public class PresetCreator : EditorWindow {
+    public class PresetCreator : EditorWindow
+    {
         #region Variables
 
         private static string _windowTitle = "Preset Creator";
@@ -51,7 +55,8 @@ namespace AwAVR.PresetCreator {
         #region Window
 
         [MenuItem("Tools/AwA/Preset Creator", false, -100)]
-        public static void ShowWindow() {
+        public static void ShowWindow()
+        {
             var window = GetWindow<PresetCreator>(_windowTitle);
             window.titleContent = new GUIContent(
                 image: EditorGUIUtility.IconContent("d_Audio Mixer@2x").image,
@@ -63,16 +68,19 @@ namespace AwAVR.PresetCreator {
             LoadSettings();
         }
 
-        public void OnEnable() {
+        public void OnEnable()
+        {
             _avatars = Core.GetAvatarsInScene();
 
-            if (_avatars.Count == 0) {
+            if (_avatars.Count == 0)
+            {
                 EditorGUILayout.HelpBox("Please place an avatar in the scene", MessageType.Error);
                 _avatars = null;
                 return;
             }
 
-            if (_avatars.Count == 1) {
+            if (_avatars.Count == 1)
+            {
                 _avatar = _avatars.First();
                 _avatars.Clear();
                 return;
@@ -81,27 +89,32 @@ namespace AwAVR.PresetCreator {
             LoadSettings();
         }
 
-        private static void LoadSettings() {
+        private static void LoadSettings()
+        {
             if (EditorPrefs.HasKey(HasReadMenuWarningKey))
                 _hasReadMenuWarning = EditorPrefs.GetBool(HasReadMenuWarningKey);
         }
 
-        public void OnGUI() {
+        public void OnGUI()
+        {
             Core.Title(_windowTitle);
 
             // Info box
-            if (!_hasReadMenuWarning) {
+            if (!_hasReadMenuWarning)
+            {
                 EditorGUILayout.HelpBox(
                     "This tool won't automatically add the preset to a menu, you will have to do this manually." +
                     "\n\n" +
                     "More info can be found here: https://awa-vr.github.io/vrc-docs/docs/unity/presets/#menu\n" +
                     "(Click the button below to open)",
                     MessageType.Warning);
-                using (new EditorGUILayout.HorizontalScope()) {
+                using (new EditorGUILayout.HorizontalScope())
+                {
                     if (GUILayout.Button("Open Link"))
                         Application.OpenURL("https://awa-vr.github.io/vrc-docs/docs/unity/presets/#menu");
 
-                    if (GUILayout.Button("Close Warning")) {
+                    if (GUILayout.Button("Close Warning"))
+                    {
                         EditorPrefs.SetBool(HasReadMenuWarningKey, true);
                         _hasReadMenuWarning = true;
                     }
@@ -112,7 +125,8 @@ namespace AwAVR.PresetCreator {
 
             // Avatar
             Core.GetAvatar(ref _avatar, ref _avatars);
-            if (!_avatar) {
+            if (!_avatar)
+            {
                 EditorGUILayout.HelpBox("Please select an avatar", MessageType.Error);
                 return;
             }
@@ -126,14 +140,16 @@ namespace AwAVR.PresetCreator {
             // Get FX Animator
             _fx = Core.GetAnimatorController(_avatar);
 
-            if (_fx == null) {
+            if (_fx == null)
+            {
                 EditorGUILayout.HelpBox("Can't find an FX animator on your avatar. Please add one", MessageType.Error);
                 return;
             }
 
             // Presets layer
             _presetsLayer = Core.GetLayerByName(_fx, "Presets");
-            if (_presetsLayer == null) {
+            if (_presetsLayer == null)
+            {
                 ShowWriteDefaultsToggle();
                 AskAddPresetsLayer();
                 return;
@@ -141,7 +157,8 @@ namespace AwAVR.PresetCreator {
 
             // Get presets
             _presets = _presetsLayer.stateMachine.states;
-            if (_presets.Length == 1) {
+            if (_presets.Length == 1)
+            {
                 EditorGUILayout.HelpBox("No presets found.", MessageType.Info);
                 AddPreset();
                 return;
@@ -151,9 +168,11 @@ namespace AwAVR.PresetCreator {
             PresetSelection();
 
             // New preset
-            if (_addNewPreset) {
+            if (_addNewPreset)
+            {
                 AddPreset();
-                if (GUILayout.Button("Cancel")) {
+                if (GUILayout.Button("Cancel"))
+                {
                     _addNewPreset = false;
                     UpdatePresetsList();
                 }
@@ -165,13 +184,15 @@ namespace AwAVR.PresetCreator {
             ShowEditButtons();
 
             // Rename Preset Shiz
-            if (_renamePreset) {
+            if (_renamePreset)
+            {
                 ShowRenameGUI();
                 return;
             }
 
             // List params
-            if (_currentPreset) {
+            if (_currentPreset)
+            {
                 // Header
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Parameter", GUILayout.ExpandWidth(true));
@@ -191,23 +212,29 @@ namespace AwAVR.PresetCreator {
 
         #region GUIHelpers
 
-        private void ShowWriteDefaultsToggle() {
+        private void ShowWriteDefaultsToggle()
+        {
             var content = new GUIContent("Write Defaults",
                 tooltip: "This just exists to shut up the VRChat SDK and VRCFury.");
             _writeDefaults = GUILayout.Toggle(_writeDefaults, content, GUILayout.Width(100));
         }
 
-        private void PresetSelection() {
-            using (new GUILayout.HorizontalScope()) {
+        private void PresetSelection()
+        {
+            using (new GUILayout.HorizontalScope())
+            {
                 var presetNames = _presets.Select(p => p.state.name).Where(name => name != "Idle").ToArray();
                 _selectedPresetIndex = EditorGUILayout.Popup("Preset", _selectedPresetIndex, presetNames);
 
-                if (_selectedPresetIndex != _lastSelectedPresetIndex) {
+                if (_selectedPresetIndex != _lastSelectedPresetIndex)
+                {
                     // Check if there are unsaved changes
-                    if (_presetsParameters.Any(p => p.Modified)) {
+                    if (_presetsParameters.Any(p => p.Modified))
+                    {
                         if (!EditorUtility.DisplayDialog("Unsaved Changes",
                                 "You have unsaved changes in the current preset. Do you want to continue without saving?",
-                                "Discard Changes", "Cancel")) {
+                                "Discard Changes", "Cancel"))
+                        {
                             _selectedPresetIndex = _lastSelectedPresetIndex;
                             return;
                         }
@@ -220,8 +247,10 @@ namespace AwAVR.PresetCreator {
             }
         }
 
-        private void ShowEditButtons() {
-            using (new GUILayout.HorizontalScope()) {
+        private void ShowEditButtons()
+        {
+            using (new GUILayout.HorizontalScope())
+            {
                 var style = new GUIStyle(GUI.skin.button);
                 // style.imagePosition = ImagePosition.ImageOnly;
 
@@ -242,17 +271,21 @@ namespace AwAVR.PresetCreator {
             }
         }
 
-        private void ShowRenameGUI() {
+        private void ShowRenameGUI()
+        {
 #if PARAMETER_RENAMER_V1_1_0
-            using (new GUILayout.VerticalScope()) {
+            using (new GUILayout.VerticalScope())
+            {
                 var presetName = GetPresetName();
-                using (new EditorGUI.DisabledGroupScope(true)) {
+                using (new EditorGUI.DisabledGroupScope(true))
+                {
                     EditorGUILayout.TextField("Old Name", presetName);
                 }
 
                 _newPresetName = EditorGUILayout.TextField("New Name", _newPresetName);
 
-                if (GUILayout.Button("Rename")) {
+                if (GUILayout.Button("Rename"))
+                {
                     if (EditorUtility.DisplayDialog("Confirm",
                             $"Are you sure you want to rename preset \"{presetName}\" to \"{_newPresetName}\"", "Yes",
                             "No")) ;
@@ -261,25 +294,31 @@ namespace AwAVR.PresetCreator {
 
                         // Check if preset exists
                         bool paramExists = false;
-                        foreach (var vrcParam in _vrcParams.parameters) {
-                            if (vrcParam.name == parameterName) {
+                        foreach (var vrcParam in _vrcParams.parameters)
+                        {
+                            if (vrcParam.name == parameterName)
+                            {
                                 paramExists = true;
                                 break;
                             }
                         }
 
-                        foreach (var fxParam in _fx.parameters) {
-                            if (fxParam.name == parameterName) {
+                        foreach (var fxParam in _fx.parameters)
+                        {
+                            if (fxParam.name == parameterName)
+                            {
                                 paramExists = true;
                                 break;
                             }
                         }
 
                         // Renaming SHiz
-                        if (paramExists) {
+                        if (paramExists)
+                        {
                             EditorUtility.DisplayDialog("Name already used", "New preset name is already used.", "OK");
                         }
-                        else {
+                        else
+                        {
                             Undo.RecordObject(_fx, "Rename Preset");
                             _presetsLayer.stateMachine.states[_selectedPresetIndex + 1].state.name = _newPresetName;
                             Core.Cleany(_fx);
@@ -300,24 +339,28 @@ namespace AwAVR.PresetCreator {
 
         #region Methods
 
-        private void UpdatePresetsList() {
+        private void UpdatePresetsList()
+        {
             _currentPreset = _presets[_selectedPresetIndex + 1].state;
             _writeDefaults = _currentPreset.writeDefaultValues;
             var parameterDriver = _currentPreset.behaviours.OfType<VRCAvatarParameterDriver>().First();
 
             _presetsParameters.Clear();
-            foreach (var vrcParamsParameter in _vrcParams.parameters) {
+            foreach (var vrcParamsParameter in _vrcParams.parameters)
+            {
                 var value = 0f;
                 var isPreset = false;
 
                 var presetParam =
                     parameterDriver.parameters.FirstOrDefault(p => p.name == vrcParamsParameter.name);
-                if (presetParam != null) {
+                if (presetParam != null)
+                {
                     value = presetParam.value;
                     isPreset = true;
                 }
 
-                var presetParameter = new Preset(new VRC_AvatarParameterDriver.Parameter {
+                var presetParameter = new Preset(new VRC_AvatarParameterDriver.Parameter
+                    {
                         name = vrcParamsParameter.name,
                         value = value
                     },
@@ -329,12 +372,15 @@ namespace AwAVR.PresetCreator {
             }
         }
 
-        private void AskAddPresetsLayer() {
+        private void AskAddPresetsLayer()
+        {
             EditorGUILayout.HelpBox("No presets layer found!", MessageType.Error);
 
             GUILayout.Label("Create one now?");
-            if (GUILayout.Button("Create Presets Layer")) {
-                AnimatorControllerLayer presetsLayer = new AnimatorControllerLayer {
+            if (GUILayout.Button("Create Presets Layer"))
+            {
+                AnimatorControllerLayer presetsLayer = new AnimatorControllerLayer
+                {
                     name = "AwA - Presets - DO NOT TOUCH",
                     defaultWeight = 1f,
                     stateMachine = new AnimatorStateMachine
@@ -351,7 +397,8 @@ namespace AwAVR.PresetCreator {
                 var emptyClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(Path.Combine(
                     Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this))),
                     "Empty Clip.anim"));
-                if (emptyClip == null) {
+                if (emptyClip == null)
+                {
                     Debug.LogError("Can't find 'Empty Clip' animation!");
                     return;
                 }
@@ -363,17 +410,20 @@ namespace AwAVR.PresetCreator {
             }
         }
 
-        private void AddPreset() {
+        private void AddPreset()
+        {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Preset Name", GUILayout.Width(100));
             _newPresetName = EditorGUILayout.TextField(_newPresetName);
             EditorGUILayout.EndHorizontal();
 
-            if (GUILayout.Button("Add Preset", GUILayout.ExpandWidth(true))) {
+            if (GUILayout.Button("Add Preset", GUILayout.ExpandWidth(true)))
+            {
                 var emptyClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(Path.Combine(
                     Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this))),
                     "Empty Clip.anim"));
-                if (emptyClip == null) {
+                if (emptyClip == null)
+                {
                     Debug.LogError("Can't find 'Empty Clip' animation!");
                     return;
                 }
@@ -392,15 +442,19 @@ namespace AwAVR.PresetCreator {
                 string paramName = "Presets/" + _newPresetName;
                 bool paramExists = false;
 
-                foreach (var vrcParam in _vrcParams.parameters) {
-                    if (vrcParam.name == _newPresetName) {
+                foreach (var vrcParam in _vrcParams.parameters)
+                {
+                    if (vrcParam.name == _newPresetName)
+                    {
                         paramExists = true;
                         break;
                     }
                 }
 
-                if (!paramExists) {
-                    var newVRCParam = new VRCExpressionParameters.Parameter {
+                if (!paramExists)
+                {
+                    var newVRCParam = new VRCExpressionParameters.Parameter
+                    {
                         name = paramName,
                         valueType = VRCExpressionParameters.ValueType.Bool,
                         defaultValue = 0.0f,
@@ -411,7 +465,8 @@ namespace AwAVR.PresetCreator {
                     List<VRCExpressionParameters.Parameter> newParamsList =
                         new List<VRCExpressionParameters.Parameter>();
 
-                    foreach (var param in _vrcParams.parameters) {
+                    foreach (var param in _vrcParams.parameters)
+                    {
                         newParamsList.Add(param);
                     }
 
@@ -423,14 +478,17 @@ namespace AwAVR.PresetCreator {
 
                 // add parameter to fx params
                 paramExists = false;
-                foreach (var fxParam in _fx.parameters) {
-                    if (fxParam.name == paramName) {
+                foreach (var fxParam in _fx.parameters)
+                {
+                    if (fxParam.name == paramName)
+                    {
                         paramExists = true;
                         break;
                     }
                 }
 
-                if (!paramExists) {
+                if (!paramExists)
+                {
                     var newFXParam = new AnimatorControllerParameter();
                     newFXParam.type = AnimatorControllerParameterType.Bool;
                     newFXParam.name = paramName;
@@ -443,7 +501,8 @@ namespace AwAVR.PresetCreator {
                 var idleState = _presetsLayer.stateMachine.states
                     .FirstOrDefault(state => state.state.name == "Idle")
                     .state;
-                if (idleState == null) {
+                if (idleState == null)
+                {
                     Debug.LogError("Can't find 'Idle' state!");
                     Core.Cleany(_fx);
                     return;
@@ -451,15 +510,18 @@ namespace AwAVR.PresetCreator {
 
                 var newPresetState = _presetsLayer.stateMachine.states
                     .FirstOrDefault(state => state.state.name == _newPresetName).state;
-                if (newPresetState == null) {
+                if (newPresetState == null)
+                {
                     Debug.LogError("Can't find '" + _newPresetName + "' state!");
                     Core.Cleany(_fx);
                     return;
                 }
 
                 var idleStateTransition = idleState.AddTransition(newPresetState);
-                idleStateTransition.conditions = new[] {
-                    new AnimatorCondition {
+                idleStateTransition.conditions = new[]
+                {
+                    new AnimatorCondition
+                    {
                         mode = AnimatorConditionMode.If,
                         parameter = paramName
                     }
@@ -472,8 +534,10 @@ namespace AwAVR.PresetCreator {
                 idleStateTransition.interruptionSource = TransitionInterruptionSource.None;
 
                 var newPresetTransition = newPresetState.AddExitTransition();
-                newPresetTransition.conditions = new[] {
-                    new AnimatorCondition {
+                newPresetTransition.conditions = new[]
+                {
+                    new AnimatorCondition
+                    {
                         mode = AnimatorConditionMode.IfNot,
                         parameter = paramName
                     }
@@ -495,11 +559,13 @@ namespace AwAVR.PresetCreator {
             }
         }
 
-        private void ListParams() {
+        private void ListParams()
+        {
             if (_currentPreset == null)
                 return;
 
-            foreach (var param in _vrcParams.parameters) {
+            foreach (var param in _vrcParams.parameters)
+            {
                 if (param.name.StartsWith("Presets/") || param.name.StartsWith("Blend/"))
                     continue;
 
@@ -514,7 +580,8 @@ namespace AwAVR.PresetCreator {
 
                 EditorGUI.BeginDisabledGroup(!isInPreset);
                 GUI.color = preset.Modified ? Color.yellow : Color.white;
-                switch (param.valueType) {
+                switch (param.valueType)
+                {
                     case VRCExpressionParameters.ValueType.Bool:
                         GUILayout.Label("bool", EditorStyles.boldLabel, GUILayout.Width(45));
 
@@ -522,7 +589,8 @@ namespace AwAVR.PresetCreator {
                             isInPreset ? Convert.ToBoolean(preset.Parameter.value) : false,
                             GUILayout.Width(60)
                         );
-                        if (preset.Parameter.value != Convert.ToSingle(newBoolValue)) {
+                        if (preset.Parameter.value != Convert.ToSingle(newBoolValue))
+                        {
                             preset.Parameter.value = Convert.ToSingle(newBoolValue);
                             preset.Modified = true;
                         }
@@ -532,7 +600,8 @@ namespace AwAVR.PresetCreator {
                         GUILayout.Label("int", EditorStyles.boldLabel, GUILayout.Width(45));
 
                         int newIntValue = EditorGUILayout.IntField((int)preset.Parameter.value, GUILayout.Width(60));
-                        if (preset.Parameter.value != newIntValue) {
+                        if (preset.Parameter.value != newIntValue)
+                        {
                             preset.Parameter.value = newIntValue;
                             preset.Modified = true;
                         }
@@ -542,7 +611,8 @@ namespace AwAVR.PresetCreator {
                         GUILayout.Label("float", EditorStyles.boldLabel, GUILayout.Width(45));
 
                         float newFloatValue = EditorGUILayout.FloatField(preset.Parameter.value, GUILayout.Width(60));
-                        if (preset.Parameter.value != newFloatValue) {
+                        if (preset.Parameter.value != newFloatValue)
+                        {
                             preset.Parameter.value = newFloatValue;
                             preset.Modified = true;
                         }
@@ -561,7 +631,8 @@ namespace AwAVR.PresetCreator {
                 GUILayout.Space(30);
                 bool newChangeValue = EditorGUILayout.Toggle(isInPreset);
                 GUILayout.EndHorizontal();
-                if (preset.Change != newChangeValue) {
+                if (preset.Change != newChangeValue)
+                {
                     preset.Change = newChangeValue;
                     preset.Modified = true;
                 }
@@ -571,12 +642,14 @@ namespace AwAVR.PresetCreator {
             }
         }
 
-        private void NewPreset() {
+        private void NewPreset()
+        {
             Debug.Log("New Preset");
             _addNewPreset = true;
         }
 
-        private void UpdatePreset() {
+        private void UpdatePreset()
+        {
             if (!_currentPreset)
                 return;
 
@@ -586,7 +659,8 @@ namespace AwAVR.PresetCreator {
             Undo.RecordObject(parameterDriver, $"Update Preset: {_currentPreset.name}");
             parameterDriver.parameters.Clear();
 
-            foreach (var preset in _presetsParameters) {
+            foreach (var preset in _presetsParameters)
+            {
                 // Skip if the parameter shouldn't be changed by the preset
                 if (!preset.Change)
                     continue;
@@ -594,7 +668,8 @@ namespace AwAVR.PresetCreator {
                 parameterDriver.parameters.Add(preset.Parameter);
             }
 
-            parameterDriver.parameters.Add(new VRC_AvatarParameterDriver.Parameter {
+            parameterDriver.parameters.Add(new VRC_AvatarParameterDriver.Parameter
+            {
                 name = "Presets/" + _currentPreset.name,
                 value = 0f
             });
@@ -603,7 +678,8 @@ namespace AwAVR.PresetCreator {
             UpdatePresetsList();
         }
 
-        private void RenamePreset() {
+        private void RenamePreset()
+        {
 #if PARAMETER_RENAMER_V1_1_0
             _renamePreset = true;
 #else
@@ -613,12 +689,14 @@ namespace AwAVR.PresetCreator {
 #endif
         }
 
-        private void DeletePreset() {
+        private void DeletePreset()
+        {
             var presetName = GetPresetName();
             if (EditorUtility.DisplayDialog("Confirm",
                     $"Are you sure you want to delete preset \"{presetName}\"?\nThis will not remove it from any menus you made have had the preset added to.",
                     "Yes",
-                    "No")) {
+                    "No"))
+            {
                 var objects = new UnityEngine.Object[] { _fx, _vrcParams };
                 Undo.RecordObjects(objects, $"Delete Preset: {presetName}");
 
@@ -626,16 +704,21 @@ namespace AwAVR.PresetCreator {
 
                 // Remove state from Presets Layer
                 var presetState = _presetsLayer.stateMachine.states
-                    .FirstOrDefault(state => state.state.name == parameterName).state;
-                _presetsLayer.stateMachine.RemoveState(presetState);
+                    .FirstOrDefault(state => state.state != null && state.state.name == presetName).state;
+
+                if (presetState != null)
+                    _presetsLayer.stateMachine.RemoveState(presetState);
 
                 // Remove from fx parameters
                 var parameterIndex = _fx.parameters.ToList().FindIndex(p => p.name == parameterName);
-                _fx.RemoveParameter(parameterIndex);
+
+                if (parameterIndex != -1)
+                    _fx.RemoveParameter(parameterIndex);
 
                 // Remove from VRC parameters
                 var newParamsList = new List<VRCExpressionParameters.Parameter>();
-                foreach (var param in _vrcParams.parameters) {
+                foreach (var param in _vrcParams.parameters)
+                {
                     if (param.name != parameterName)
                         newParamsList.Add(param);
                 }
@@ -643,10 +726,18 @@ namespace AwAVR.PresetCreator {
                 _vrcParams.parameters = newParamsList.ToArray();
 
                 Core.CleanObjects(objects);
+                _presets = _presetsLayer.stateMachine.states;
+                _selectedPresetIndex = 0;
+
+                if (_presets.Length > 1)
+                    UpdatePresetsList();
+                else
+                    _currentPreset = null;
             }
         }
 
-        private string GetPresetName() {
+        private string GetPresetName()
+        {
             return _presets[_selectedPresetIndex + 1].state.name;
         }
 
